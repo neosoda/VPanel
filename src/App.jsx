@@ -226,20 +226,7 @@ function App() {
         })));
     }, [defaultModule]);
 
-    const generateUUID = () => {
-        let lut = [];
-        for (var i = 0; i < 256; i++) {
-            lut[i] = (i < 16 ? '0' : '') + (i).toString(16);
-        }
-        const d0 = Math.random() * 0xffffffff | 0;
-        const d1 = Math.random() * 0xffffffff | 0;
-        const d2 = Math.random() * 0xffffffff | 0;
-        const d3 = Math.random() * 0xffffffff | 0;
-        return lut[d0 & 0xff] + lut[d0 >> 8 & 0xff] + lut[d0 >> 16 & 0xff] + lut[d0 >> 24 & 0xff] + '-' +
-            lut[d1 & 0xff] + lut[d1 >> 8 & 0xff] + '-' + lut[d1 >> 16 & 0x0f | 0x40] + lut[d1 >> 24 & 0xff] + '-' +
-            lut[d2 & 0x3f | 0x80] + lut[d2 >> 8 & 0xff] + '-' + lut[d2 >> 16 & 0xff] + lut[d2 >> 24 & 0xff] +
-            lut[d3 & 0xff] + lut[d3 >> 8 & 0xff] + lut[d3 >> 16 & 0xff] + lut[d3 >> 24 & 0xff];
-    };
+    const generateUUID = () => crypto.randomUUID();
 
     const getUrlParam = (name, type = 'string', defaultValue = null) => {
         const queryString = window.location.search;
@@ -952,7 +939,7 @@ function App() {
 
         const id = data.currentModule.id.trim().toUpperCase();
         const icon = data.currentModule.icon;
-        const text = (data.currentModule.text ?? "").trimRight().replace(/ [ \r\n]+/gm, "\n");
+        const text = (data.currentModule.text ?? "").trimEnd().replace(/ [ \r\n]+/gm, "\n");
         const desc = (data.currentModule.desc ?? "").trim();
         const parentId = (data.currentModule.parentId ?? "").trim();
         const kcId = (data.currentModule.kcId ?? "").trim();
@@ -1252,36 +1239,36 @@ function App() {
     }
 
     const handleModuleMoveLeft = (rowIndex, moduleIndex) => {
-        let rows = switchboard.rows;
-        let row = rows[rowIndex];
+        const row = switchboard.rows[rowIndex];
         const currentModule = row[moduleIndex];
         const prevModule = (moduleIndex - 1) >= 0 ? row[moduleIndex - 1] : null;
 
         if ((!currentModule.free || (currentModule.free && currentModule.span > 1)) && prevModule?.free === true && prevModule?.span === 1) {
-            row[moduleIndex - 1] = currentModule;
-            row[moduleIndex] = prevModule;
-            rows[rowIndex] = row;
+            const newRow = [...row];
+            newRow[moduleIndex - 1] = currentModule;
+            newRow[moduleIndex] = prevModule;
+            const newRows = switchboard.rows.map((r, i) => i === rowIndex ? newRow : r);
             setSwitchboard((old) => {
                 moduleFocus(rowIndex + 1, moduleIndex);
-                return modulesAutoId({ ...old, rows });
-            })
+                return modulesAutoId({ ...old, rows: newRows });
+            });
         }
     }
 
     const handleModuleMoveRight = (rowIndex, moduleIndex) => {
-        let rows = switchboard.rows;
-        let row = rows[rowIndex];
+        const row = switchboard.rows[rowIndex];
         const currentModule = row[moduleIndex];
         const nextModule = (moduleIndex + currentModule.span) < switchboard.stepsPerRows ? row[moduleIndex + 1] : null;
 
         if ((!currentModule.free || (currentModule.free && currentModule.span > 1)) && nextModule?.free === true && nextModule?.span === 1) {
-            row[moduleIndex + 1] = currentModule;
-            row[moduleIndex] = nextModule;
-            rows[rowIndex] = row;
+            const newRow = [...row];
+            newRow[moduleIndex + 1] = currentModule;
+            newRow[moduleIndex] = nextModule;
+            const newRows = switchboard.rows.map((r, i) => i === rowIndex ? newRow : r);
             setSwitchboard((old) => {
                 moduleFocus(rowIndex + 1, moduleIndex + 2);
-                return modulesAutoId({ ...old, rows });
-            })
+                return modulesAutoId({ ...old, rows: newRows });
+            });
         }
     }
 
@@ -1496,20 +1483,16 @@ function App() {
     }
 
     const handleModuleHalf = (rowIndex, moduleIndex, item, mode) => {
-        let rows = switchboard.rows;
-        let row = rows[rowIndex];
+        const row = switchboard.rows[rowIndex];
         const currentModule = row[moduleIndex];
 
         if (!currentModule.free && (mode === "none" || mode === "left" || mode === "right")) {
-            row[moduleIndex] = {
-                ...currentModule,
-                half: mode
-            };
-            rows[rowIndex] = row;
+            const newRow = row.map((m, j) => j === moduleIndex ? { ...m, half: mode } : m);
+            const newRows = switchboard.rows.map((r, i) => i === rowIndex ? newRow : r);
             setSwitchboard((old) => {
                 moduleFocus(rowIndex + 1, moduleIndex + 2);
-                return modulesAutoId({ ...old, rows });
-            })
+                return modulesAutoId({ ...old, rows: newRows });
+            });
         }
     }
 
@@ -1545,23 +1528,23 @@ function App() {
     }
 
     const handleRowAddAfter = (rowIndex) => {
-        let rows = switchboard.rows;
-        if (rows.length >= rowsMax) {
+        if (switchboard.rows.length >= rowsMax) {
             alert(`Impossible d'ajouter une nouvelle rangée.\nTaille maximum atteinte: ${rowsMax} rangées`);
             return;
         }
 
         const newRow = createRow(switchboard.stepsPerRows, 1);
-        rows.splice(rowIndex + 1, 0, ...newRow);
-
-        setSwitchboard((old) => modulesAutoId({ ...old, rows }));
+        const newRows = [
+            ...switchboard.rows.slice(0, rowIndex + 1),
+            ...newRow,
+            ...switchboard.rows.slice(rowIndex + 1)
+        ];
+        setSwitchboard((old) => modulesAutoId({ ...old, rows: newRows }));
     }
 
     const handleRowDelete = (rowIndex) => {
-        let rows = switchboard.rows;
-        rows.splice(rowIndex, 1);
-
-        setSwitchboard((old) => modulesAutoId({ ...old, rows }));
+        const newRows = switchboard.rows.filter((_, i) => i !== rowIndex);
+        setSwitchboard((old) => modulesAutoId({ ...old, rows: newRows }));
     }
 
     const rowAddAllowed = () => {
@@ -2370,7 +2353,7 @@ function App() {
                 rowsMin={rowsMin}
                 rowsMax={rowsMax}
                 heightMin={heightMin}
-                heightMax={{ heightMax }}
+                heightMax={heightMax}
                 onCreateProject={createProject}
                 onUpdateProjectProperties={updateProjectProperties}
             />}

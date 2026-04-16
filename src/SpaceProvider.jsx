@@ -101,7 +101,7 @@ export default function SpaceProvider({ children }) {
             ufiid,
             {},
             (data) => {
-                if (!data.instanceId || data.instanceId !== ufiid || !data.project || !data.params || data.printOptions) {
+                if (!data.instanceId || data.instanceId !== ufiid || !data.project || !data.params || !data.printOptions) {
                     throw new Error("Impossible de charger ce projet.");
                 } else {
                     if (!data.project || !data.project.switchboard) {
