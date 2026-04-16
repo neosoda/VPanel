@@ -50,25 +50,19 @@ RUN if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then \
 # Stage 2: Runtime PHP 8.2
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies + PHP extensions
+# Install system dependencies
 RUN apk add --no-cache \
     nginx \
     curl \
     wget \
-    supervisor \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    libwebp-dev \
-    freetype-dev \
-    libzip-dev \
-    zlib-dev
+    supervisor
 
-# Configure and install PHP GD extension
-RUN docker-php-ext-configure gd \
-    --with-freetype=/usr/include/ \
-    --with-jpeg=/usr/include/ \
-    --with-webp=/usr/include/ \
-    && docker-php-ext-install -j$(nproc) gd exif fileinfo json
+# Download and install PHP extensions helper
+ADD --chmod=0755 https://github.com/mlocati/php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+
+# Install PHP extensions (gd, exif, fileinfo, zip, opcache)
+# This is much faster and cleaner than manual compilation
+RUN install-php-extensions gd exif fileinfo zip opcache
 
 # PHP Configuration for production
 RUN cat > /usr/local/etc/php/conf.d/app.ini << 'PHP_INI'
