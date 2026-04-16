@@ -1,18 +1,16 @@
 # Vpanel
 
-Générateur d'étiquettes pour tableaux / armoires électriques.
+Générateur d'étiquettes pour tableaux / armoires électriques.  
+**Maintenu et édité par Neosoda**
 
 ---
 
-
 [<img alt="URL" src="https://img.shields.io/badge/🠊-https://www.vpanel.fr-%3CCOLOR%3E?style=for-the-badge&color=darkcyan&labelColor=darkcyan">](https://www.vpanel.fr)
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6T61BPPX0)
 
 <img alt="Création" src="https://img.shields.io/badge/Date%20de%20création-26/05/2024-%3CCOLOR%3E?style=flat&color=fff">&nbsp;&nbsp;
 <img alt="Version" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.vpanel.fr%2Fapp%2Finfos.json&query=%24.version&label=Version%20actuelle&color=%23fff">&nbsp;&nbsp;
 <img alt="Licence" src="https://img.shields.io/badge/Licence-AGPL v3-%3CCOLOR%3E?style=flat&color=fff"><br />
-<img alt="Auteur" src="https://img.shields.io/badge/Auteur-Neosoda <contact (at) vpanel (dot) fr>-%3CCOLOR%3E?style=flat&color=fff"><br />
+<img alt="Maintainer" src="https://img.shields.io/badge/Maintainer-Neosoda-%3CCOLOR%3E?style=flat&color=fff"><br />
 
 <img alt="Temps réel" src="https://img.shields.io/badge/Quelques%20chiffres%20en%20temps%20r%C3%A9el-darkcyan">&nbsp;&nbsp;
 <img alt="Projets" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwww.vpanel.fr%2Fapp%2Fapi%2Fresume.php%3Fm%3Dproduction&query=%24.create&label=Projets&color=%23fff">&nbsp;&nbsp;
@@ -476,7 +474,7 @@ sélectionner "Taille réelle" ou "Echelle 100%" pour respecter la mise en page 
 
 # Remerciements ❤ !
 
-Au travers vos utilisations de Vpanel, vous n'hésitez pas à me remonter des bugs, proposer de nouvelles idées, et vous m'offrez un café donc je vous en remercie fortement pour tout celà !
+Merci à tous les utilisateurs et contributeurs de Vpanel ! N'hésitez pas à remonter des bugs ou proposer de nouvelles idées pour faire évoluer le projet.
 
 ### 🐛 Remontées de [BUGS](https://github.com/neosoda/Vpanel/issues?q=is%3Aissue) (les [issues](https://github.com/neosoda/Vpanel/issues?q=is%3Aissue)) , et les [Discussions](https://github.com/neosoda/Vpanel/discussions)
 
@@ -502,5 +500,3 @@ Au travers vos utilisations de Vpanel, vous n'hésitez pas à me remonter des bu
 - [misterg94](https://github.com/misterg94)
 - [Fanka14](https://github.com/Fanka14)
 - [xhark](https://github.com/blogmotion)
-
- ### ☕ Ainsi que pour tous les cafés offerts ;-)
