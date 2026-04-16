@@ -1108,6 +1108,25 @@ function App() {
         }
     };
 
+    const moduleInsert = (rowIndex, moduleIndex) => {
+        setSwitchboard((old) => {
+            const row = old.rows[rowIndex];
+            if (row.length >= old.stepsPerRows) {
+                alert("Impossible d'insérer : la rangée est pleine.");
+                return old;
+            }
+
+            let rows = old.rows.map((r, i) => {
+                if (i !== rowIndex) return r;
+                let newRow = [...r];
+                newRow.splice(moduleIndex, 0, { ...defaultModule, span: 1 });
+                return newRow;
+            });
+
+            return modulesAutoId({ ...old, rows });
+        });
+    };
+
     const moduleFocus = (rowPosition, modulePosition) => {
         const m = document.querySelector(`[data-id="${rowPosition}-${modulePosition}"]`);
         if (m) {
@@ -1236,6 +1255,10 @@ function App() {
     const handleModuleEdit = (rowIndex, moduleIndex) => {
         editModule(rowIndex, moduleIndex);
         moduleFocus(rowIndex + 1, moduleIndex + 1);
+    }
+
+    const handleModuleInsert = (rowIndex, moduleIndex) => {
+        moduleInsert(rowIndex, moduleIndex);
     }
 
     const handleModuleMoveLeft = (rowIndex, moduleIndex) => {
@@ -2294,6 +2317,7 @@ function App() {
                         onModuleMoveRight={(moduleIndex, item, moduleRef) => handleModuleMoveRight(i, moduleIndex, item, moduleRef)}
 
                         onModuleHalf={(moduleIndex, item, mode) => handleModuleHalf(i, moduleIndex, item, mode)}
+                        onModuleInsert={(moduleIndex) => handleModuleInsert(i, moduleIndex)}
 
                         moduleShrinkAllowed={(moduleIndex, item) => moduleShrinkAllowed(i, moduleIndex, item)}
                         moduleGrowAllowed={(moduleIndex, item) => moduleGrowAllowed(i, moduleIndex, item)}

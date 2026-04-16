@@ -16,6 +16,7 @@
  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { Fragment } from 'react';
 import './row.css';
 import rowAddIcon from './assets/row-add.svg';
 import rowDeleteIcon from './assets/trash.svg';
@@ -53,6 +54,7 @@ function Row({
     onModuleHalf = null,
     onRowAddAfter = null,
     onRowDelete = null,
+    onModuleInsert = null,
     rowAddAllowed = null,
     rowDeleteAllowed = null,
     printFreeModuleAllowed = null,
@@ -70,49 +72,52 @@ function Row({
             </div>
             <div className="row" style={style}>
                 {items.map((item, i) => (
-                    <Module
-                        key={i}
-                        item={item}
-                        modulePosition={i + 1}
-                        rowPosition={rowPosition}
-                        theme={theme}
-                        clipboard={clipboard}
-                        clipboardMode={clipboardMode}
+                    <Fragment key={i}>
+                        {i === 0 && <div className="row_insert_zone first" onClick={() => onModuleInsert(0)} title="Insérer un module ici" />}
+                        <Module
+                            item={item}
+                            modulePosition={i + 1}
+                            rowPosition={rowPosition}
+                            theme={theme}
+                            clipboard={clipboard}
+                            clipboardMode={clipboardMode}
 
-                        style={{
-                            "--h": style['--h'],
-                            "--sw": style['--sw']
-                        }}
+                            style={{
+                                "--h": style['--h'],
+                                "--sw": style['--sw']
+                            }}
 
-                        onGrow={(item, moduleRef) => onModuleGrow(i, item, moduleRef)}
-                        onShrink={(item, moduleRef) => onModuleShrink(i, item, moduleRef)}
+                            onGrow={(item, moduleRef) => onModuleGrow(i, item, moduleRef)}
+                            onShrink={(item, moduleRef) => onModuleShrink(i, item, moduleRef)}
 
-                        onClear={(item) => onModuleClear(i, item)}
-                        onEdit={(item) => onModuleEdit(i, item)}
+                            onClear={(item) => onModuleClear(i, item)}
+                            onEdit={(item) => onModuleEdit(i, item)}
 
-                        onCopy={(item) => onModuleCopy(i, item)}
-                        onCut={(item) => onModuleCut(i, item)}
-                        onPaste={(item) => onModulePaste(i, item)}
-                        onInter={(item) => onModuleInter(i, item)}
-                        onInterCopy={(item) => onModuleInterCopy(i, item)}
-                        cancelPaste={() => onModuleCancelPaste()}
-                        pasteAllowed={(item) => modulePasteAllowed(i, item)}
-                        interAllowed={(item) => moduleInterAllowed(i, item)}
-                        hasClipboard={hasClipboard}
+                            onCopy={(item) => onModuleCopy(i, item)}
+                            onCut={(item) => onModuleCut(i, item)}
+                            onPaste={(item) => onModulePaste(i, item)}
+                            onInter={(item) => onModuleInter(i, item)}
+                            onInterCopy={(item) => onModuleInterCopy(i, item)}
+                            cancelPaste={() => onModuleCancelPaste()}
+                            pasteAllowed={(item) => modulePasteAllowed(i, item)}
+                            interAllowed={(item) => moduleInterAllowed(i, item)}
+                            hasClipboard={hasClipboard}
 
-                        shrinkAllowed={(item) => moduleShrinkAllowed(i, item)}
-                        growAllowed={(item) => moduleGrowAllowed(i, item)}
+                            shrinkAllowed={(item) => moduleShrinkAllowed(i, item)}
+                            growAllowed={(item) => moduleGrowAllowed(i, item)}
 
-                        moveLeftAllowed={(item) => moduleMoveLeftAllowed(i, item)}
-                        moveRightAllowed={(item) => moduleMoveRightAllowed(i, item)}
-                        onMoveLeft={(item, moduleRef) => onModuleMoveLeft(i, item, moduleRef)}
-                        onMoveRight={(item, moduleRef) => onModuleMoveRight(i, item, moduleRef)}
+                            moveLeftAllowed={(item) => moduleMoveLeftAllowed(i, item)}
+                            moveRightAllowed={(item) => moduleMoveRightAllowed(i, item)}
+                            onMoveLeft={(item, moduleRef) => onModuleMoveLeft(i, item, moduleRef)}
+                            onMoveRight={(item, moduleRef) => onModuleMoveRight(i, item, moduleRef)}
 
-                        onHalf={(item, mode) => onModuleHalf(i, item, mode)}
+                            onHalf={(item, mode) => onModuleHalf(i, item, mode)}
 
-                        printFreeModuleAllowed={() => printFreeModuleAllowed()}
+                            printFreeModuleAllowed={() => printFreeModuleAllowed()}
 
-                    />
+                        />
+                        <div className="row_insert_zone" onClick={() => onModuleInsert(i + 1)} title="Insérer un module ici" />
+                    </Fragment>
                 ))}
             </div>
             <div className={`row_add ${!rowAddAllowed() ? 'disabled' : ''}`} title="Insérer une nouvelle rangée">

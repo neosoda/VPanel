@@ -228,118 +228,70 @@ function Module({
             )
         }
 
-        {!hasClipboard && !isDemo && canTransform && <>
-            <div className="module_top">
-                <div className="top_row">
-                    <div className="tool" title="Demi module sur la gauche"
-                        onClick={() => onHalf(item, halfModeLeft)}
-                        data-disabled={!canHalfMode}><img
-                            src={!canHalfMode ? halfLeftIcon : (isHalfLeftMode ? halfLeftIcon : noHalfIcon)}
-                            alt="Demi module sur la gauche" width={16} height={16} /></div>
-                    <div className="tool shrink" title="Largeur -1 [-]" onClick={() => onShrink(item, moduleRef)}
-                        data-disabled={!shrinkAllowed(item)}><img src={shrinkIcon} alt="Réduire" width={15}
-                            height={15} />
-                    </div>
-                    <div className="tool left" title="Décaler vers la gauche [←]"
-                        onClick={() => onMoveLeft(item, moduleRef)} data-disabled={!moveLeftAllowed(item)}><img
-                            src={leftIcon} alt="Déplacer vers la gauche" width={15} height={15} /></div>
-                </div>
-                <div className="top_row">
-                    <div className="tool" title="Demi module sur la droite"
-                        onClick={() => onHalf(item, halfModeRight)}
-                        data-disabled={!canHalfMode}><img
-                            src={!canHalfMode ? halfRightIcon : (isHalfRightMode ? halfRightIcon : noHalfIcon)}
-                            alt="Demi module sur la droite" width={16} height={16} /></div>
-                    <div className="tool grow" title="Largeur +1 [+]" onClick={() => onGrow(item, moduleRef)}
-                        data-disabled={!growAllowed(item)}><img src={growIcon} alt="Agrandir" width={15} height={15} />
-                    </div>
-                    <div className="tool right" title="Décaler vers la droite [→]"
-                        onClick={() => onMoveRight(item, moduleRef)} data-disabled={!moveRightAllowed(item)}><img
-                            src={rightIcon} alt="Déplacer vers la droite" width={15} height={15} /></div>
-                </div>
-                {item.span > 1 && <div className="top_row" style={{ flex: 1, marginTop: '4px' }}>
-                    <div className="tool size" style={{ marginLeft: 'auto', marginRight: '10px' }}
-                        title={`Largeur: ${item.span} modules`}><br />⤚ {item.span} ⤙
-                    </div>
-                </div>}
-            </div>
-        </>
-        }
-
-        {!canPaste && !canInter && !isDemo && !isFree && (
-            <div className="module_bottom">
-                {(canEdit || canCopy) && (
-                    <div className="bottom_row">
-                        <div className="tool copy" title="Copier" onClick={() => onCopy(item)} data-disabled={!onCopy}>
-                            <img src={copyIcon}
-                                alt="Copier"
-                                width={14}
-                                height={14}
-                                style={{ marginTop: '2px', marginLeft: '2px' }} />
+        {!hasClipboard && !isDemo && (canTransform || !isFree) &&
+            <div className="module_actions">
+                {canTransform && (
+                    <div className="action_group">
+                        <div className="tool left" title="Décaler vers la gauche"
+                            onClick={() => onMoveLeft(item, moduleRef)} data-disabled={!moveLeftAllowed(item)}>
+                            <img src={leftIcon} alt="Gauche" width={16} height={16} />
                         </div>
-                        <div className="tool cut" title="Couper" onClick={() => onCut(item)} data-disabled={!onCopy}>
-                            <img src={cutIcon}
-                                alt="Couper"
-                                width={16}
-                                height={16}
-                                style={{ marginTop: '2px', marginLeft: '2px' }} />
+                        <div className="tool right" title="Décaler vers la droite"
+                            onClick={() => onMoveRight(item, moduleRef)} data-disabled={!moveRightAllowed(item)}>
+                            <img src={rightIcon} alt="Droite" width={16} height={16} />
+                        </div>
+                        <div className="tool shrink" title="Réduire" onClick={() => onShrink(item, moduleRef)}
+                            data-disabled={!shrinkAllowed(item)}>
+                            <img src={shrinkIcon} alt="Moins" width={16} height={16} />
+                        </div>
+                        <div className="tool grow" title="Agrandir" onClick={() => onGrow(item, moduleRef)}
+                            data-disabled={!growAllowed(item)}>
+                            <img src={growIcon} alt="Plus" width={16} height={16} />
                         </div>
                     </div>
                 )}
-                <div className="bottom_row" style={{ marginTop: '2px' }}>
-                    {(canInterCopy) && (
-                        <div className="tool inter" title="Echanger ce module avec un autre"
-                            onClick={() => onInterCopy(item)}
-                            data-disabled={isFree}><img
-                                src={interIcon}
-                                alt="Echanger le module" width={16} height={16} />
+
+                {!isFree && (
+                    <div className="action_group">
+                        <div className="tool copy" title="Copier" onClick={() => onCopy(item)}>
+                            <img src={copyIcon} alt="Copier" width={16} height={16} />
                         </div>
-                    )}
-                    <div className="tool delete" title="Supprimer le module"
-                        onClick={() => onClear(item)}
-                        data-disabled={isFree}><img
-                            src={clearIcon}
-                            alt="Supprimer le module" width={16} height={16} />
+                        <div className="tool cut" title="Couper" onClick={() => onCut(item)}>
+                            <img src={cutIcon} alt="Couper" width={16} height={16} />
+                        </div>
+                        <div className="tool delete" title="Supprimer" onClick={() => onClear(item)}>
+                            <img src={clearIcon} alt="Poubelle" width={16} height={16} />
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {canHalfMode && (
+                    <div className="action_group">
+                        <div className="tool" title="Demi gauche" onClick={() => onHalf(item, halfModeLeft)}>
+                            <img src={isHalfLeftMode ? halfLeftIcon : noHalfIcon} alt="Demi L" width={16} height={16} />
+                        </div>
+                        <div className="tool" title="Demi droite" onClick={() => onHalf(item, halfModeRight)}>
+                            <img src={isHalfRightMode ? halfRightIcon : noHalfIcon} alt="Demi R" width={16} height={16} />
+                        </div>
+                    </div>
+                )}
             </div>
-        )}
+        }
 
         {hasClipboard && !isDemo && clipboard?.id === item.id &&
-            <div className="module_bottom paste force_visible" title="Cliquer ici pour annuler">
-                <div className="tool paste cancel" onClick={() => cancelPaste()}
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'inline-flex',
-                        flexDirection: 'row',
-                        justifyContent: 'center',
-                        alignItems: 'center'
-                    }}>
-                    <img src={cancelredIcon} alt="Annuler" width={16} height={16}
-                        style={{ marginTop: '-4px' }} />
+            <div className="module_actions force_visible" title="Cliquer pour annuler">
+                <div className="tool delete" onClick={() => cancelPaste()} style={{ width: '100%' }}>
+                    <img src={cancelredIcon} alt="Annuler" width={16} height={16} />
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', marginLeft: '4px' }}>Annuler le collage</span>
                 </div>
             </div>
         }
 
         {canInter && !isDemo && clipboard?.id !== item.id &&
-            <div className="module_bottom paste" title="Cliquer sur le module pour procéder à l'échange">
-                <div className="tool inter"
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'inline-flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        textAlign: 'center',
-                        cursor: 'default',
-                        gap: '6px',
-                        lineHeight: '1'
-                    }}>
-                    <img src={inter2Icon} alt="Echanger avec ce module" width={16} height={16}
-                        style={{ marginTop: '-4px' }} />
-                    <small>Echanger avec ce module</small>
+            <div className="module_actions force_visible">
+                <div className="tool inter" style={{ width: '100%', gap: '6px' }}>
+                    <img src={inter2Icon} alt="Echange" width={16} height={16} />
+                    <span style={{ fontSize: '11px', fontWeight: '600' }}>Échanger avec ce module</span>
                 </div>
             </div>
         }
