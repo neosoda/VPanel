@@ -166,6 +166,8 @@ h4 {
     border: 1px solid var(--border);
     border-radius: 10px;
     box-shadow: var(--shadow-sm);
+    padding-top: 100px;
+    padding-bottom: 80px;
 }
 
 .schema.selected {
@@ -185,9 +187,9 @@ h4 {
     flex-wrap: nowrap;
     gap: 0.625em;
     width: max-content;
-    margin-bottom: 0;
-    margin-inline: 1.5rem;
-    margin-top: 1.5rem;
+    margin-bottom: 40px;
+    margin-inline: 4rem;
+    margin-top: 2rem;
 }
 
 .switchboard_row:last-of-type {
