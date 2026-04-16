@@ -57,8 +57,8 @@ RUN apk add --no-cache \
     wget \
     supervisor
 
-# Download and install PHP extensions helper
-ADD --chmod=0755 https://github.com/mlocati/php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+# Use the official installer image to get the script (faster than downloading)
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
 # Install PHP extensions (gd, exif, fileinfo, zip, opcache)
 # This is much faster and cleaner than manual compilation
