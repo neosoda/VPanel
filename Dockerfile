@@ -119,8 +119,7 @@ RUN if [ ! -f ./public/infos.json ]; then \
       echo '{"version":"0.1beta","name":"Vpanel","description":"Générateur d'\''étiquettes"}' > ./public/infos.json; \
     fi
 
-# Copy public JSON files (if they exist)
-RUN cp public/*.json ./public/ 2>/dev/null || true
+# (No-op: JSON files are already in ./public via COPY --from=builder)
 
 # Set proper permissions
 RUN chown -R www-data:www-data /app && \
@@ -204,10 +203,12 @@ server {
 NGINX_CONF
 
 # Supervisor configuration (manage PHP-FPM + Nginx)
-RUN cat > /etc/supervisor.d/app.conf << 'SUPERVISOR_CONF'
+# logfile must be a real file path (not /proc/self/fd/2) - supervisord tries to rotate it
+RUN cat > /etc/supervisord.conf << 'SUPERVISOR_CONF'
 [supervisord]
 nodaemon=true
-logfile=/proc/self/fd/2
+logfile=/dev/null
+logfile_maxbytes=0
 pidfile=/var/run/supervisord.pid
 loglevel=info
 
@@ -215,8 +216,10 @@ loglevel=info
 command=php-fpm --nodaemonize
 autostart=true
 autorestart=true
-stderr_logfile=/proc/self/fd/2
-stdout_logfile=/proc/self/fd/1
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
 startsecs=0
 priority=999
 
@@ -224,14 +227,12 @@ priority=999
 command=nginx -g "daemon off;"
 autostart=true
 autorestart=true
-stderr_logfile=/proc/self/fd/2
-stdout_logfile=/proc/self/fd/1
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
 startsecs=0
 priority=1000
-
-[group:webservices]
-programs=php-fpm,nginx
-priority=999
 SUPERVISOR_CONF
 
 # Healthcheck script
@@ -269,4 +270,4 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=20s \
     CMD /healthcheck.sh
 
 # Run supervisor to manage PHP-FPM and Nginx
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor.d/app.conf"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
