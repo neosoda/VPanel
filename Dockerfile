@@ -107,11 +107,13 @@ RUN apk add --no-cache \
         libjpeg-turbo-dev \
         freetype-dev \
         icu-dev \
+        sqlite \
+        sqlite-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
         gd \
         pdo \
-        pdo_mysql \
+        pdo_sqlite \
         intl \
     && rm -rf /var/cache/apk/*
 
@@ -138,6 +140,7 @@ COPY docker/php-fpm.conf      /usr/local/etc/php-fpm.d/zzz-vpanel.conf
 
 # Entrypoint : génère constants.php depuis les variables d'env
 COPY docker/entrypoint.sh /entrypoint.sh
+COPY docker/init.sqlite.sql /init.sqlite.sql
 RUN chmod +x /entrypoint.sh
 
 # Permissions

@@ -42,11 +42,8 @@ services:
     environment:
       # Variables runtime injectées au démarrage du conteneur
       PHP_APP_MODE: production
-      MYSQL_HOST: ${MYSQL_HOST:-db}
-      MYSQL_PORT: ${MYSQL_PORT:-3306}
-      MYSQL_BASE: ${MYSQL_BASE:-vpanel}
-      MYSQL_USER: ${MYSQL_USER:-vpanel}
-      MYSQL_PASS: ${MYSQL_PASS:-changeme}
+      # Configuration SQLite
+      SQLITE_DB_PATH: /var/www/api/data/vpanel.sqlite
       # Hostname PHP pour la validation du Referer (sans scheme ni slash final)
       APP_HOSTNAME: ${APP_HOSTNAME:-localhost}
       # SMTP (optionnel — laisser vide pour désactiver)
@@ -62,38 +59,14 @@ services:
       STATS_VISITS_INTERVAL: ${STATS_VISITS_INTERVAL:-30 minutes}
     ports:
       - "${APP_PORT:-80}:80"
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - vpanel_net
-
-  # ── Base de données MySQL / MariaDB ────────────────────────
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootchangeme}
-      MYSQL_DATABASE: ${MYSQL_BASE:-vpanel}
-      MYSQL_USER: ${MYSQL_USER:-vpanel}
-      MYSQL_PASSWORD: ${MYSQL_PASS:-changeme}
     volumes:
-      # Persistance des données
-      - db_data:/var/lib/mysql
-      # Initialisation du schéma au premier démarrage
-      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootchangeme}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      - vpanel_data:/var/www/api/data
     restart: unless-stopped
     networks:
       - vpanel_net
 
 volumes:
-  db_data:
+  vpanel_data:
     driver: local
 
 networks:

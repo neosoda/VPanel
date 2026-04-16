@@ -25,11 +25,11 @@ require_once(__DIR__ . '/stats.php');
 if (STATS_ALLOWED && STATS_STRUCTURE_ALLOWED && STATS_ACTION_ALLOWED) {
     $tableName = 'stats_action_' . STATS_ACTION;
 
-    $stmt = DB->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1");
-    $stmt->execute([MYSQL_BASE, $tableName]);
+    $stmt = DB->prepare("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=? LIMIT 1");
+    $stmt->execute([$tableName]);
     $count = $stmt->fetchColumn(0);
     if ($count === 0) {
-        $sql = "CREATE TABLE " . $tableName . " (date date NOT NULL DEFAULT current_timestamp(), struct varchar(10) NOT NULL, counters longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '{}' CHECK (json_valid(`counters`)), PRIMARY KEY (date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+        $sql = "CREATE TABLE " . $tableName . " (date date NOT NULL DEFAULT CURRENT_TIMESTAMP, struct varchar(10) NOT NULL, counters TEXT NOT NULL DEFAULT '{}', PRIMARY KEY (date))";
         $stmt = DB->prepare($sql);
         $stmt->execute();
     }

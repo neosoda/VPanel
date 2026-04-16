@@ -27,8 +27,8 @@ $stats = [];
 
 foreach (STATS_ALLOWED_ACTIONS_FULL as $actionItem) {
     $tableName = 'stats_action_' . $actionItem['key'];
-    $stmt = DB->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1");
-    $stmt->execute([MYSQL_BASE, $tableName]);
+    $stmt = DB->prepare("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=? LIMIT 1");
+    $stmt->execute([$tableName]);
     $count = $stmt->fetchColumn(0);
     if ($count === 1) {
         $stmt = DB->prepare("SELECT * FROM " . $tableName);

@@ -2,7 +2,7 @@
 # =============================================================
 # entrypoint.sh — Vpanel
 # Génère les fichiers constants.*.php depuis les variables
-# d'environnement, attend la DB, puis démarre supervisord.
+# d'environnement, initialise SQLite puis démarre supervisord.
 # =============================================================
 set -e
 
@@ -22,11 +22,7 @@ bool_php() {
 # ──────────────────────────────────────────────────────────────
 # Valeurs par défaut des variables d'environnement
 # ──────────────────────────────────────────────────────────────
-MYSQL_HOST="${MYSQL_HOST:-db}"
-MYSQL_PORT="${MYSQL_PORT:-3306}"
-MYSQL_BASE="${MYSQL_BASE:-vpanel}"
-MYSQL_USER="${MYSQL_USER:-vpanel}"
-MYSQL_PASS="${MYSQL_PASS:-changeme}"
+SQLITE_DB_PATH="${SQLITE_DB_PATH:-/var/www/api/data/vpanel.sqlite}"
 
 SMTP_HOST="${SMTP_HOST:-}"
 SMTP_PORT="${SMTP_PORT:-587}"
@@ -43,10 +39,30 @@ STATS_VISITS_INTERVAL="${STATS_VISITS_INTERVAL:-30 minutes}"
 APP_HOSTNAME="${APP_HOSTNAME:-localhost}"
 
 # ──────────────────────────────────────────────────────────────
+# Initialisation SQLite
+# ──────────────────────────────────────────────────────────────
+SQLITE_DIR=$(dirname "$SQLITE_DB_PATH")
+if [ ! -d "$SQLITE_DIR" ]; then
+    log "Création du répertoire $SQLITE_DIR..."
+    mkdir -p "$SQLITE_DIR"
+    chown www-data:www-data "$SQLITE_DIR"
+fi
+
+if [ ! -f "$SQLITE_DB_PATH" ]; then
+    log "Initialisation de la base SQLite dans $SQLITE_DB_PATH..."
+    touch "$SQLITE_DB_PATH"
+    if [ -f "/init.sqlite.sql" ]; then
+        sqlite3 "$SQLITE_DB_PATH" < /init.sqlite.sql
+        log "Schéma SQLite importé avec succès."
+    fi
+    chown www-data:www-data "$SQLITE_DB_PATH"
+    chmod 660 "$SQLITE_DB_PATH"
+else
+    log "Base de données SQLite trouvée à l'emplacement $SQLITE_DB_PATH."
+fi
+
+# ──────────────────────────────────────────────────────────────
 # Génération des fichiers constants.*.php
-# Les deux fichiers (development + production) reçoivent les
-# mêmes credentials afin qu'un appel avec ?m=development ne
-# soit pas refusé silencieusement en cas de configuration mixte.
 # ──────────────────────────────────────────────────────────────
 generate_constants() {
     local MODE="$1"
@@ -60,11 +76,7 @@ generate_constants() {
 // Ne pas éditer manuellement.
 
 // Base de données
-define('MYSQL_HOST', '${MYSQL_HOST}');
-define('MYSQL_PORT', '${MYSQL_PORT}');
-define('MYSQL_BASE', '${MYSQL_BASE}');
-define('MYSQL_USER', '${MYSQL_USER}');
-define('MYSQL_PASS', '${MYSQL_PASS}');
+define('SQLITE_DB_PATH', '${SQLITE_DB_PATH}');
 
 // SMTP (optionnel)
 define('SMTP_HOST',     '${SMTP_HOST}');
@@ -92,35 +104,6 @@ PHPEOF
 
 generate_constants "production"
 generate_constants "development"
-
-# ──────────────────────────────────────────────────────────────
-# Attente de la disponibilité de la base de données
-# ──────────────────────────────────────────────────────────────
-log "Attente de la base de données ${MYSQL_HOST}:${MYSQL_PORT}..."
-MAX_TRIES=30
-TRIES=0
-until php -r "
-    try {
-        new PDO(
-            'mysql:host=${MYSQL_HOST};port=${MYSQL_PORT};dbname=${MYSQL_BASE}',
-            '${MYSQL_USER}',
-            '${MYSQL_PASS}'
-        );
-        exit(0);
-    } catch (PDOException \$e) {
-        exit(1);
-    }
-" 2>/dev/null; do
-    TRIES=$((TRIES + 1))
-    if [ "$TRIES" -ge "$MAX_TRIES" ]; then
-        log "AVERTISSEMENT : la base de données n'est pas disponible après ${MAX_TRIES} tentatives."
-        log "Le conteneur va tout de même démarrer, mais les API nécessitant MySQL échoueront."
-        break
-    fi
-    log "Base de données non prête, nouvelle tentative dans 2 s... (${TRIES}/${MAX_TRIES})"
-    sleep 2
-done
-log "Base de données disponible."
 
 # ──────────────────────────────────────────────────────────────
 # Démarrage des services via supervisord

@@ -533,10 +533,14 @@ define('USER_AGENT', $ua);
 
 // database
 try {
-    $pdo = new PDO("mysql:host=" . MYSQL_HOST . ";port=" . MYSQL_PORT . ";dbname=" . MYSQL_BASE, MYSQL_USER, MYSQL_PASS);
+    if (!defined('SQLITE_DB_PATH')) {
+        define('SQLITE_DB_PATH', __DIR__ . '/../../data/vpanel.sqlite');
+    }
+    $pdo = new PDO("sqlite:" . SQLITE_DB_PATH);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->exec('PRAGMA foreign_keys = ON;');
     define('DB', $pdo);
 } catch (PDOException $e) {
-    dd_json(content: $e->getMessage());
+    dd_json(content: "Erreur SQLite : " . $e->getMessage());
     exit(0);
 }
