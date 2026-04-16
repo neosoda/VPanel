@@ -28,16 +28,16 @@ COPY src ./src
 COPY public/api ./public/api
 COPY index.html vite.config.js .eslintrc.cjs ./
 
-# Compiler config
-RUN node app-config-compiler.cjs
-
-# Build app pour Coolify avec env vars baked
+# Build app pour Coolify (compile config, copy assets, then build with Vite)
+# Using npx vite directly to avoid npm script resolution issues in cached layers
 RUN echo "Building Vpanel with:" && \
     echo "  VITE_APP_BASE=${VITE_APP_BASE}" && \
     echo "  VITE_APP_URL=${VITE_APP_URL}" && \
     echo "  VITE_APP_API_URL=${VITE_APP_API_URL}" && \
     echo "  VITE_USE_AUTH=${VITE_USE_AUTH}" && \
-    npm run build:coolify
+    node app-config-compiler.cjs && \
+    ./node_modules/.bin/cpx "src/schema_functions.json" "public/api/libs/toPdf/assets" && \
+    NODE_ENV=production ./node_modules/.bin/vite build --mode coolify
 
 # Verify build
 RUN if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then \
