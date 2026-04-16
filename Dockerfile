@@ -5,7 +5,7 @@ FROM node:20-alpine AS builder
 WORKDIR /build
 
 # Build-time arguments for Vite configuration
-ARG VITE_APP_BASE=.
+ARG VITE_APP_BASE=./
 ARG VITE_APP_URL=https://example.com
 ARG VITE_APP_API_URL=/api/
 ARG VITE_USE_AUTH=false
@@ -36,6 +36,7 @@ RUN echo "Building Vpanel with:" && \
     echo "  VITE_APP_API_URL=${VITE_APP_API_URL}" && \
     echo "  VITE_USE_AUTH=${VITE_USE_AUTH}" && \
     node app-config-compiler.cjs && \
+    mkdir -p public/api/libs/toPdf/assets/ && \
     cp -p src/schema_functions.json public/api/libs/toPdf/assets/schema_functions.json && \
     NODE_ENV=production ./node_modules/.bin/vite build --mode coolify
 
@@ -58,7 +59,9 @@ RUN apk add --no-cache \
     libpng-dev \
     libjpeg-turbo-dev \
     libwebp-dev \
-    freetype-dev
+    freetype-dev \
+    libzip-dev \
+    zlib-dev
 
 # Configure and install PHP GD extension
 RUN docker-php-ext-configure gd \
