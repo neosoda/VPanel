@@ -1482,9 +1482,17 @@ if (!isset($_POST['tv'])) {
     exit;
 }
 
-$switchboard = json_decode($_POST['switchboard']);
-$printOptions = json_decode($_POST['printOptions']);
-$tv = json_decode($_POST['tv']);
+$switchboard = json_decode($_POST['switchboard'] ?? 'null');
+if (!is_object($switchboard) || !isset($switchboard->rows) || !is_array($switchboard->rows)) {
+    echo 'Invalid switchboard payload';
+    exit;
+}
+
+$printOptions = json_decode($_POST['printOptions'] ?? 'null');
+if (!is_object($printOptions)) {
+    $printOptions = (object)[];
+}
+$tv = json_decode($_POST['tv'] ?? '""');
 $auto = intval(trim(($_POST['auto'] ?? '0'))) === 1;
 $schemaGridColor = explode(',', trim($_POST['schemaGridColor'] ?? ''));
 $isDev = intval(trim(($_POST['isDev'] ?? '0'))) === 1;

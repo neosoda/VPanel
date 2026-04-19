@@ -563,8 +563,16 @@ define('PARENT_REFERER', $prt);
 
 // client infos
 $ip = isset($_GET['ip']) ? trim(rawurldecode($_GET['ip'])) : '';
-if (!filter_var($ip, FILTER_VALIDATE_IP))
+if (!filter_var($ip, FILTER_VALIDATE_IP)) {
     $ip = getRealUserIp();
+    if (strpos((string)$ip, ',') !== false) {
+        $ips = explode(',', (string)$ip);
+        $ip = trim($ips[0]);
+    }
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        $ip = '0.0.0.0';
+    }
+}
 define('CLIENT_IP', $ip);
 define('CLIENT_TYPE', isBot() ? 'bot' : 'user');
 define('CLIENT_FROM_LOCALHOST', CLIENT_IP === '127.0.0.1' || CLIENT_IP === '::1');

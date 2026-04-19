@@ -28,7 +28,11 @@ if (STATS_ALLOWED && STATS_STRUCTURE_ALLOWED) {
 
     $ipGeo = [];
     try {
-        $ipGeo = json_decode(file_get_contents("http://ip-api.com/json/" . CLIENT_IP), true);
+        $ctx = stream_context_create(['http' => ['timeout' => 1.5]]);
+        $ipGeoRes = @file_get_contents("http://ip-api.com/json/" . CLIENT_IP, false, $ctx);
+        if ($ipGeoRes !== false) {
+            $ipGeo = json_decode($ipGeoRes, true);
+        }
     } catch (\Exception $ex) {
         $ipGeo['country'] = '_error_';
     }
