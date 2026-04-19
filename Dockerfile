@@ -269,6 +269,7 @@ NGINX_CONF
 RUN cat > /etc/supervisord.conf << 'SUPERVISOR_CONF'
 [supervisord]
 nodaemon=true
+user=root
 logfile=/dev/null
 logfile_maxbytes=0
 pidfile=/var/run/supervisord.pid
