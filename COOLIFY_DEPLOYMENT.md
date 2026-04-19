@@ -1,26 +1,40 @@
-# Vpanel Deployment Guide for Coolify
+# Vpanel - Déploiement Coolify (référence opérationnelle)
 
-## Quick Start
+## 1) Type d'application Coolify
 
-1. Edit `.env.coolify` with your domain
-2. In Coolify Dashboard → Add Docker Compose
-3. Paste `docker-compose.prod.yml` content
-4. Set Build Arguments from `.env.coolify`
-5. Click Deploy
+Utiliser une application Docker basée sur le `Dockerfile` du dépôt (ou `docker-compose.prod.yml` si vous déployez en mode compose).
 
----
+- Port interne: `8080`
+- Healthcheck: `GET /api/health.php`
+- Volume persistant requis: `/app/public/data`
 
-## Environment Variables Setup
+## 2) Variables Build (obligatoires)
 
-### Build-Time (required - baked into app)
+Définir dans les **Build Arguments**:
 
 ```env
-VITE_APP_URL=https://vpanel.yourdomain.com
-VITE_APP_API_URL=https://vpanel.yourdomain.com/api/
+VITE_APP_MODE=production
+VITE_APP_BASE=/
+VITE_APP_URL=https://vpanel.example.com/
+VITE_APP_API_URL=/api/
 VITE_USE_AUTH=false
 ```
 
-### Runtime (can change without rebuild)
+Si vous utilisez `docker-compose.prod.yml` en mode Compose Coolify, renseigner
+les mêmes valeurs avec le préfixe `COOLIFY_` (`COOLIFY_VITE_APP_URL`, etc.).
+
+## 3) Variables Runtime (obligatoires)
+
+Définir dans les **Environment Variables**:
+
+```env
+PHP_APP_MODE=production
+PHP_DEBUG=false
+APP_HOSTNAME=vpanel.example.com
+SQLITE_DB_PATH=/app/public/data/vpanel.sqlite
+```
+
+Variables recommandées pour PHP-FPM:
 
 ```env
 PHP_FPM_PM_MAX_CHILDREN=20
@@ -29,80 +43,22 @@ PHP_FPM_PM_MIN_SPARE_SERVERS=2
 PHP_FPM_PM_MAX_SPARE_SERVERS=10
 ```
 
----
+## 4) Validation post-déploiement
 
-## Validation Post-Deploy
-
-```bash
-# Check container
-docker ps | grep vpanel
-
-# Test API
-curl https://vpanel.yourdomain.com/infos.json
-
-# View logs
-docker logs vpanel-prod
-
-# Run health check
-docker exec vpanel-prod /healthcheck.sh
-```
-
----
-
-## Troubleshooting
-
-### Build Failed
-- Check all VITE_ build arguments set
-- Verify domain in VITE_APP_URL
-- Check npm dependencies available
-
-### API Not Responding
-- Verify VITE_APP_API_URL matches domain
-- Check reverse proxy configuration
-- Test: `curl https://yourdomain.com/api/choices.php`
-
-### Healthcheck Failing
-- Check logs: `docker logs vpanel-prod`
-- Restart: `docker restart vpanel-prod`
-- Wait 30s for PHP-FPM startup
-
-### Out of Memory
-Increase in docker-compose.prod.yml:
-```yaml
-deploy:
-  resources:
-    limits:
-      memory: 4G
-```
-
----
-
-## Performance Tuning
-
-Increase worker pool for 100+ users:
-```env
-PHP_FPM_PM_MAX_CHILDREN=50
-PHP_FPM_PM_START_SERVERS=10
-```
-
----
-
-## Updates & Maintenance
+Exécuter ces checks (depuis votre poste):
 
 ```bash
-# Rebuild with latest code
-docker-compose -f docker-compose.prod.yml build --no-cache
-
-# Deploy
-docker-compose -f docker-compose.prod.yml up -d
-
-# Monitor
-docker-compose logs -f vpanel
+curl -fsS https://vpanel.example.com/infos.json
+curl -fsS https://vpanel.example.com/api/health.php
+curl -fsS https://vpanel.example.com/api/toPdf.php?require=1
 ```
 
----
+Critères:
 
-## Support
+- `/api/health.php` doit retourner `"status":"ok"`.
+- `/api/toPdf.php?require=1` doit répondre en JSON.
 
-See `DEPLOYMENT_CHECKLIST.md` for detailed validation steps.
+## 5) Persistance
 
+Le backend écrit en SQLite sous `/app/public/data/vpanel.sqlite`.  
+Sans volume sur `/app/public/data`, les stats seront perdues à chaque redéploiement/recréation de conteneur.

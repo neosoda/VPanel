@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 
-require('./libs/fpdf186/fpdf.php');
+require(__DIR__ . '/libs/fpdf186/fpdf.php');
 define('EURO', chr(128));
 
 
@@ -108,9 +108,9 @@ class VpanelPDF extends FPDF
     {
         $response = [
             'modules' => [
-                'php' => version_compare(phpversion(), '8.3', '>='),
-                'fpdf' => file_exists('./libs/fpdf186/fpdf.php'),
-                'schema_functions.json' => file_exists('./libs/toPdf/assets/schema_functions.json'),
+                'php' => version_compare(phpversion(), '8.2', '>='),
+                'fpdf' => file_exists(__DIR__ . '/libs/fpdf186/fpdf.php'),
+                'schema_functions.json' => file_exists(__DIR__ . '/libs/toPdf/assets/schema_functions.json'),
                 'php_imagick' => extension_loaded('imagick'),
                 'convert' => false,
             ],
@@ -147,7 +147,7 @@ class VpanelPDF extends FPDF
     {
         $this->required = self::requirements();
 
-        $this->schemaFunctions = json_decode(file_get_contents('./libs/toPdf/assets/schema_functions.json'), true);
+        $this->schemaFunctions = json_decode(file_get_contents(__DIR__ . '/libs/toPdf/assets/schema_functions.json'), true);
         $this->schemaLevelsCounterRecursive();
 
         parent::__construct($orientation, $unit, $size);
@@ -589,14 +589,14 @@ class VpanelPDF extends FPDF
         if ($color === '#ffffff')
             $color = '#fefefe';
 
-        $path = '../';
+        $path = __DIR__ . '/../';
         $name = trim(strtolower($name));
         $pi = pathinfo($name);
 
         $mtime = file_exists($path . $name) ? filemtime($path . $name) : time();
 
         $pngname = $pi['filename'] . '.png';
-        $pngpath = './libs/toPdf/themes/icons/' . $color . '/';
+        $pngpath = __DIR__ . '/libs/toPdf/themes/icons/' . $color . '/';
         if (!is_dir($pngpath))
             mkdir($pngpath, 0777, true);
         if (file_exists($pngpath . $pngname) && filemtime($pngpath . $pngname) === $mtime)
@@ -631,13 +631,13 @@ class VpanelPDF extends FPDF
     function getSymbol(string $func, int $width = 100, int $height = 125): string
     {
         $name = "schema_{$func}.svg";
-        $path = '../';
+        $path = __DIR__ . '/../';
         $name = trim(strtolower($name));
         $pi = pathinfo($name);
         $mtime = file_exists($path . $name) ? filemtime($path . $name) : time();
 
         $pngname = $pi['filename'] . '.png';
-        $pngpath = './libs/toPdf/themes/icons/symbols/';
+        $pngpath = __DIR__ . '/libs/toPdf/themes/icons/symbols/';
         if (!is_dir($pngpath))
             mkdir($pngpath, 0777, true);
         if (file_exists($pngpath . $pngname) && filemtime($pngpath . $pngname) === $mtime)
@@ -659,13 +659,13 @@ class VpanelPDF extends FPDF
     function getPoleSymbol(string $pole, int $width = 11, int $height = 17): string
     {
         $name = "schema_{$pole}.svg";
-        $path = '../';
+        $path = __DIR__ . '/../';
         $name = trim($name);
         $pi = pathinfo($name);
         $mtime = file_exists($path . $name) ? filemtime($path . $name) : time();
 
         $pngname = $pi['filename'] . '.png';
-        $pngpath = './libs/toPdf/themes/icons/poles/';
+        $pngpath = __DIR__ . '/libs/toPdf/themes/icons/poles/';
         if (!is_dir($pngpath))
             mkdir($pngpath, 0777, true);
         if (file_exists($pngpath . $pngname) && filemtime($pngpath . $pngname) === $mtime)
@@ -858,7 +858,7 @@ class VpanelPDF extends FPDF
                 $this->SetLineWidth(0.075);
                 $this->SetDash(1, 1);
                 $this->Line($cutLine[0], $cutLine[1], $cutLine[2], $cutLine[3]);
-                $this->Image('./libs/toPdf/assets/cut.png', $cutLine[0] + 1.5, $cutLine[1] - 1.25, 2.5, 2.5, 'PNG');
+                $this->Image(__DIR__ . '/libs/toPdf/assets/cut.png', $cutLine[0] + 1.5, $cutLine[1] - 1.25, 2.5, 2.5, 'PNG');
                 ;
             }
             $this->SetDash();
@@ -873,7 +873,7 @@ class VpanelPDF extends FPDF
             global $switchboard, $printOptions, $labelsPrintFormat;
             $printCurrents = $printOptions->pdfOptions?->printCurrents ?? false;
 
-            require_once './libs/toPdf/themes/engine.php';
+            require_once __DIR__ . '/libs/toPdf/themes/engine.php';
             $h = $switchboard->height;
             $w = $switchboard->stepSize;
 
@@ -1346,7 +1346,7 @@ class VpanelPDF extends FPDF
             $this->SetX($oldPosX + 5);
             $this->Cell($columns[0]['w'], 8, str("Rangée {$rowPositionText}"), 0, 0, $columns[0]['align']);
             $this->SetX($oldPosX);
-            $this->Image('./libs/toPdf/assets/summary_row.png', $oldPosX, $this->GetY() + 1.9, 4, 4, 'PNG');
+            $this->Image(__DIR__ . '/libs/toPdf/assets/summary_row.png', $oldPosX, $this->GetY() + 1.9, 4, 4, 'PNG');
 
 
             $rowIsEmpty = true;
@@ -1379,7 +1379,7 @@ class VpanelPDF extends FPDF
                     $this->SetX($oldPosX + 5);
                     $this->Cell($columns[1]['w'], 8, str("P{$columnPositionText}"), 0, 0, $columns[1]['align']);
                     $this->SetX($oldPosX);
-                    $this->Image('./libs/toPdf/assets/summary_position.png', $oldPosX, $this->GetY() + 1.9, 4, 4, 'PNG');
+                    $this->Image(__DIR__ . '/libs/toPdf/assets/summary_position.png', $oldPosX, $this->GetY() + 1.9, 4, 4, 'PNG');
                     $oldPosX += $columns[1]['w'];
 
                     if ($this->GetY() > $maxheight)

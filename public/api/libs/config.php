@@ -23,9 +23,18 @@ declare(strict_types=1);
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+$_phpMode = getenv('PHP_APP_MODE');
+$_phpMode = ($_phpMode !== false && $_phpMode !== '') ? strtolower(trim($_phpMode)) : 'development';
+$_phpDebug = getenv('PHP_DEBUG');
+if ($_phpDebug !== false && $_phpDebug !== '') {
+    $_displayErrors = in_array(strtolower(trim((string) $_phpDebug)), ['1', 'true', 'yes', 'on'], true);
+} else {
+    $_displayErrors = $_phpMode === 'development';
+}
+ini_set('display_errors', $_displayErrors ? '1' : '0');
+ini_set('display_startup_errors', $_displayErrors ? '1' : '0');
 error_reporting(E_ALL);
+unset($_phpMode, $_phpDebug, $_displayErrors);
 
 require __DIR__ . '/PHPMailer-master/src/Exception.php';
 require __DIR__ . '/PHPMailer-master/src/PHPMailer.php';
@@ -108,8 +117,8 @@ function send_Mail(array|string $to, string $subject, string $body): bool
                 $mail->setFrom(SMTP_FROM[0], SMTP_FROM[1]);
                 //$mail->addReplyTo(SMTP_FROM[0], SMTP_FROM[1]);
             } else if (is_string(SMTP_FROM)) {
-                $mail->setFrom(SMTP_FROM[0], SMTP_FROM[1]);
-                //$mail->addReplyTo(SMTP_FROM[0], SMTP_FROM[1]);
+                $mail->setFrom(SMTP_FROM);
+                //$mail->addReplyTo(SMTP_FROM);
             }
         }
         if (is_array($to) && count($to) === 2) {
@@ -479,12 +488,23 @@ if (is_file($constantsFile) && is_readable($constantsFile)) {
 }
 unset($constantsFile);
 
+if (!defined('STATS_IGNORE_LOCALHOST')) {
+    define('STATS_IGNORE_LOCALHOST', false);
+}
+if (!defined('STATS_VISITS_INTERVAL')) {
+    define('STATS_VISITS_INTERVAL', '30 minutes');
+}
+
 
 // cors
+$accessControlHeaders = trim((string) ($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ?? ''));
+if ($accessControlHeaders === '') {
+    $accessControlHeaders = 'Content-Type, Authorization, X-Requested-With';
+}
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
-    header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+    header("Access-Control-Allow-Headers: {$accessControlHeaders}");
     header("Access-Control-Max-Age: 1728000");
     header("Content-Length: 0");
     header("Content-Type: text/plain");
@@ -511,6 +531,20 @@ if (MODE !== 'development') {
     // ALLOWED_HOSTS can be defined in constants.<mode>.php to extend the list
     // with the site's own hostname (required for Coolify / self-hosted deployments).
     $defaultAllowedHosts = ['localhost', '127.0.0.1', 'www.vpanel.fr'];
+    $runtimeHost = trim((string) (getenv('APP_HOSTNAME') ?: ''));
+    if ($runtimeHost !== '') {
+        $runtimeHost = preg_replace('#^https?://#i', '', $runtimeHost);
+        $runtimeHost = explode('/', $runtimeHost)[0];
+        $runtimeHost = trim($runtimeHost);
+        if ($runtimeHost !== '') {
+            $defaultAllowedHosts[] = $runtimeHost;
+        }
+    }
+    $requestHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    if ($requestHost !== '') {
+        $defaultAllowedHosts[] = $requestHost;
+    }
+    $defaultAllowedHosts = array_values(array_unique($defaultAllowedHosts));
     $allowedHosts = defined('ALLOWED_HOSTS') ? array_merge($defaultAllowedHosts, ALLOWED_HOSTS) : $defaultAllowedHosts;
     $hostIsAllowed = in_array(true, array_map(fn($allowedHost) => stripos(REFERER, $allowedHost, 0) !== false, $allowedHosts));
     if (!$hostIsAllowed) {
@@ -544,13 +578,19 @@ define('USER_AGENT', $ua);
 // database
 try {
     if (!defined('SQLITE_DB_PATH')) {
-        define('SQLITE_DB_PATH', __DIR__ . '/../../data/vpanel.sqlite');
+        $envSqlitePath = trim((string) (getenv('SQLITE_DB_PATH') ?: ''));
+        define('SQLITE_DB_PATH', $envSqlitePath !== '' ? $envSqlitePath : (__DIR__ . '/../../data/vpanel.sqlite'));
+        unset($envSqlitePath);
+    }
+    $sqliteDir = dirname(SQLITE_DB_PATH);
+    if (!is_dir($sqliteDir) && !mkdir($sqliteDir, 0775, true) && !is_dir($sqliteDir)) {
+        throw new RuntimeException("Impossible de créer le dossier SQLite : {$sqliteDir}");
     }
     $pdo = new PDO("sqlite:" . SQLITE_DB_PATH);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->exec('PRAGMA foreign_keys = ON;');
     define('DB', $pdo);
-} catch (PDOException $e) {
+} catch (\Throwable $e) {
     dd_json(content: "Erreur SQLite : " . $e->getMessage());
     exit(0);
 }

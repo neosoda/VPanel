@@ -1,3 +1,7 @@
+# ⚠️ DOCUMENT HISTORIQUE (NON NORMATIF)
+
+Ce document n'est plus la référence opérationnelle. Utiliser `COOLIFY_DEPLOYMENT.md` pour le déploiement réel.
+
 # ✅ VPANEL COOLIFY DEPLOYMENT - READY FOR PRODUCTION
 
 ## Status: PRODUCTION READY
@@ -274,4 +278,3 @@ See `COOLIFY_DEPLOYMENT.md` for detailed troubleshooting.
 **Status**: ✅ PRODUCTION READY
 
 Ready to deploy? Start with Step 1 above! 🚀
-

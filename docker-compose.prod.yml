@@ -1,6 +1,5 @@
 # Production-grade docker-compose for Coolify deployment
 # Build args are set from environment variables - configure in Coolify dashboard
-version: '3.8'
 
 services:
   vpanel:
@@ -9,19 +8,21 @@ services:
       dockerfile: Dockerfile
       args:
         # Build-time env vars (baked into Vite bundle)
-        # Set these in Coolify "Build Arguments" or via .env file
-        VITE_APP_BASE: ${VITE_APP_BASE:-.}
-        VITE_APP_URL: ${VITE_APP_URL:-https://example.com}
-        VITE_APP_API_URL: ${VITE_APP_API_URL:-/api/}
-        VITE_USE_AUTH: ${VITE_USE_AUTH:-false}
+        # Use COOLIFY_* variable names to avoid accidental reuse of local .env (dev values).
+        VITE_APP_MODE: ${COOLIFY_VITE_APP_MODE:-production}
+        VITE_APP_BASE: ${COOLIFY_VITE_APP_BASE:-/}
+        VITE_APP_HOSTNAME: ${COOLIFY_VITE_APP_HOSTNAME:-https://example.com}
+        VITE_APP_URL: ${COOLIFY_VITE_APP_URL:-https://example.com/}
+        VITE_APP_API_URL: ${COOLIFY_VITE_APP_API_URL:-/api/}
+        VITE_USE_AUTH: ${COOLIFY_VITE_USE_AUTH:-false}
     
     image: vpanel:latest
     container_name: vpanel-prod
     restart: always
     
-    # Port binding - localhost only, Coolify proxy forwards from internet
-    ports:
-      - "127.0.0.1:8080:8080"
+    # Internal port exposed to the Coolify reverse proxy
+    expose:
+      - "8080"
     
     environment:
       # Runtime PHP configuration (can be overridden without rebuild)
@@ -30,13 +31,13 @@ services:
       PHP_FPM_PM_START_SERVERS: ${PHP_FPM_PM_START_SERVERS:-4}
       PHP_FPM_PM_MIN_SPARE_SERVERS: ${PHP_FPM_PM_MIN_SPARE_SERVERS:-2}
       PHP_FPM_PM_MAX_SPARE_SERVERS: ${PHP_FPM_PM_MAX_SPARE_SERVERS:-10}
-      
-      # Production mode
-      APP_ENV: production
+      PHP_APP_MODE: ${PHP_APP_MODE:-production}
+      APP_HOSTNAME: ${APP_HOSTNAME:-example.com}
+      SQLITE_DB_PATH: ${SQLITE_DB_PATH:-/app/public/data/vpanel.sqlite}
     
     # Health check - critical for Coolify orchestration
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/infos.json"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/health.php | grep -q '\"status\":\"ok\"'"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -68,8 +69,8 @@ services:
     
     # Volumes - persistent storage only
     volumes:
-      # User projects (optional, can be disabled)
-      - vpanel_projects:/app/projects:rw
+      # Persistent SQLite storage (stats + analytics)
+      - vpanel_data:/app/public/data:rw
       
       # System timezone consistency
       - /etc/timezone:/etc/timezone:ro
@@ -86,5 +87,5 @@ networks:
 
 # Persistent volumes
 volumes:
-  vpanel_projects:
+  vpanel_data:
     driver: local

@@ -35,7 +35,112 @@ function dateTimeFrom(string $from): \DateTime
     return new \DateTime($from, new \DateTimeZone("UTC"));
 }
 
+function ensureStatsSchema(\PDO $db): void
+{
+    $tableHasColumn = static function (string $tableName, string $columnName) use ($db): bool {
+        $stmt = $db->query("PRAGMA table_info({$tableName})");
+        $columns = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        foreach ($columns as $column) {
+            if (($column['name'] ?? '') === $columnName) {
+                return true;
+            }
+        }
+        return false;
+    };
 
+    $db->exec(<<<'SQL'
+CREATE TABLE IF NOT EXISTS stats_allowed_structs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255) NOT NULL DEFAULT ''
+);
+SQL);
+
+    $db->exec(<<<'SQL'
+CREATE TABLE IF NOT EXISTS stats_allowed_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255) NOT NULL DEFAULT ''
+);
+SQL);
+
+    $db->exec(<<<'SQL'
+CREATE TABLE IF NOT EXISTS stats_allowed_choices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255) NOT NULL DEFAULT ''
+);
+SQL);
+
+    if (!$tableHasColumn('stats_allowed_structs', 'description')) {
+        $db->exec("ALTER TABLE stats_allowed_structs ADD COLUMN description VARCHAR(255) NOT NULL DEFAULT ''");
+    }
+    if (!$tableHasColumn('stats_allowed_actions', 'description')) {
+        $db->exec("ALTER TABLE stats_allowed_actions ADD COLUMN description VARCHAR(255) NOT NULL DEFAULT ''");
+    }
+    if (!$tableHasColumn('stats_allowed_choices', 'description')) {
+        $db->exec("ALTER TABLE stats_allowed_choices ADD COLUMN description VARCHAR(255) NOT NULL DEFAULT ''");
+    }
+
+    $db->exec(<<<'SQL'
+CREATE TABLE IF NOT EXISTS stats_visits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip VARCHAR(45) NOT NULL,
+    country VARCHAR(100) NOT NULL DEFAULT '',
+    regionName VARCHAR(100) NOT NULL DEFAULT '',
+    city VARCHAR(100) NOT NULL DEFAULT '',
+    timezone VARCHAR(100) NOT NULL DEFAULT '',
+    type VARCHAR(10) NOT NULL DEFAULT 'user',
+    struct VARCHAR(50) NOT NULL DEFAULT '',
+    url TEXT NOT NULL,
+    ua TEXT NOT NULL,
+    rfr TEXT NOT NULL,
+    datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+SQL);
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ip_url ON stats_visits (ip, url);");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_datetime ON stats_visits (datetime);");
+
+    $db->exec(<<<'SQL'
+CREATE TABLE IF NOT EXISTS stats_visits_details (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    visit_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    counters TEXT NOT NULL DEFAULT '{}',
+    FOREIGN KEY (visit_id) REFERENCES stats_visits(id) ON DELETE CASCADE
+);
+SQL);
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_visit_date ON stats_visits_details (visit_id, date);");
+
+    $stmt = $db->prepare("INSERT OR IGNORE INTO stats_allowed_structs (key, description) VALUES (?, ?)");
+    foreach ([['web', 'Web'], ['app', 'Application']] as [$key, $description]) {
+        $stmt->execute([$key, $description]);
+    }
+
+    $stmt = $db->prepare("INSERT OR IGNORE INTO stats_allowed_actions (key, description) VALUES (?, ?)");
+    foreach ([['create', 'Créations de projets'], ['import', 'Imports de projets'], ['export', 'Exports de projets'], ['print', 'Impressions']] as [$key, $description]) {
+        $stmt->execute([$key, $description]);
+    }
+
+    $stmt = $db->prepare("INSERT OR IGNORE INTO stats_allowed_choices (key, description) VALUES (?, ?)");
+    foreach ([['theme', 'Thèmes utilisés'], ['print', 'Types d\'impressions'], ['print_format', 'Formats d\'impression']] as [$key, $description]) {
+        $stmt->execute([$key, $description]);
+    }
+
+    $db->exec("UPDATE stats_allowed_structs SET description = 'Web' WHERE key = 'web' AND (description IS NULL OR description = '')");
+    $db->exec("UPDATE stats_allowed_structs SET description = 'Application' WHERE key = 'app' AND (description IS NULL OR description = '')");
+
+    $db->exec("UPDATE stats_allowed_actions SET description = 'Créations de projets' WHERE key = 'create' AND (description IS NULL OR description = '')");
+    $db->exec("UPDATE stats_allowed_actions SET description = 'Imports de projets' WHERE key = 'import' AND (description IS NULL OR description = '')");
+    $db->exec("UPDATE stats_allowed_actions SET description = 'Exports de projets' WHERE key = 'export' AND (description IS NULL OR description = '')");
+    $db->exec("UPDATE stats_allowed_actions SET description = 'Impressions' WHERE key = 'print' AND (description IS NULL OR description = '')");
+
+    $db->exec("UPDATE stats_allowed_choices SET description = 'Thèmes utilisés' WHERE key = 'theme' AND (description IS NULL OR description = '')");
+    $db->exec("UPDATE stats_allowed_choices SET description = 'Types d''impressions' WHERE key = 'print' AND (description IS NULL OR description = '')");
+    $db->exec("UPDATE stats_allowed_choices SET description = 'Formats d''impression' WHERE key = 'print_format' AND (description IS NULL OR description = '')");
+}
+
+ensureStatsSchema(DB);
 define('STATS_ALLOWED', !STATS_IGNORE_LOCALHOST || (STATS_IGNORE_LOCALHOST && !CLIENT_FROM_LOCALHOST));
 
 $stmt = DB->prepare("SELECT * FROM stats_allowed_structs");

@@ -1,3 +1,7 @@
+# ⚠️ DOCUMENT HISTORIQUE (NON NORMATIF)
+
+Cette checklist est conservée pour historique. La référence de déploiement est `COOLIFY_DEPLOYMENT.md`.
+
 # Vpanel Coolify Deployment Checklist
 
 ## Pre-Deployment ✓

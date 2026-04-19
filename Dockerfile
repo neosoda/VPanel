@@ -5,16 +5,67 @@ FROM node:20-alpine AS builder
 WORKDIR /build
 
 # Build-time arguments for Vite configuration
-ARG VITE_APP_BASE=./
-ARG VITE_APP_URL=https://example.com
+# These defaults make Docker builds reproducible even when no .env file is copied.
+ARG VITE_APP_MODE=production
+ARG VITE_SERVER_PORT=5173
+ARG VITE_IS_LOCAL=false
+ARG VITE_APP_BASE=/
+ARG VITE_APP_LOCALE=fr-FR
+ARG VITE_APP_HOSTNAME=https://example.com
+ARG VITE_APP_URL=https://example.com/
 ARG VITE_APP_API_URL=/api/
+ARG VITE_APP_VERSION_RANGE=">1.3.0"
+ARG VITE_DEFAULT_STEPSIZE=18
+ARG VITE_DEFAULT_STEPSPERROW=13
+ARG VITE_DEFAULT_ROWS=4
+ARG VITE_DEFAULT_ROWHEIGHT=29
+ARG VITE_DEFAULT_ID=Q
+ARG VITE_DEFAULT_ICON=
+ARG VITE_DEFAULT_TEXT=
+ARG VITE_DEFAULT_DESC=
+ARG VITE_DEFAULT_PRINT_EMPTY=true
+ARG VITE_DEFAULT_PROJECT_NAME="Nouveau projet"
+ARG VITE_DEFAULT_PROJECT_TYPE=R
+ARG VITE_DEFAULT_VREF=230
+ARG VITE_ROWS_MIN=1
+ARG VITE_ROWS_MAX=15
+ARG VITE_HEIGHT_MIN=10
+ARG VITE_HEIGHT_MAX=50
+ARG VITE_ALLOWED_MODULES=13,18,24
 ARG VITE_USE_AUTH=false
+ARG VITE_AUTOLOGOUT_TIMEOUT=10
+ARG VITE_PROJECTS_AUTOSAVE_MINUTES=2
 
 # Make available to RUN commands
-ENV VITE_APP_BASE=${VITE_APP_BASE}
-ENV VITE_APP_URL=${VITE_APP_URL}
-ENV VITE_APP_API_URL=${VITE_APP_API_URL}
-ENV VITE_USE_AUTH=${VITE_USE_AUTH}
+ENV VITE_APP_MODE=${VITE_APP_MODE} \
+    VITE_SERVER_PORT=${VITE_SERVER_PORT} \
+    VITE_IS_LOCAL=${VITE_IS_LOCAL} \
+    VITE_APP_BASE=${VITE_APP_BASE} \
+    VITE_APP_LOCALE=${VITE_APP_LOCALE} \
+    VITE_APP_HOSTNAME=${VITE_APP_HOSTNAME} \
+    VITE_APP_URL=${VITE_APP_URL} \
+    VITE_APP_API_URL=${VITE_APP_API_URL} \
+    VITE_APP_VERSION_RANGE=${VITE_APP_VERSION_RANGE} \
+    VITE_DEFAULT_STEPSIZE=${VITE_DEFAULT_STEPSIZE} \
+    VITE_DEFAULT_STEPSPERROW=${VITE_DEFAULT_STEPSPERROW} \
+    VITE_DEFAULT_ROWS=${VITE_DEFAULT_ROWS} \
+    VITE_DEFAULT_ROWHEIGHT=${VITE_DEFAULT_ROWHEIGHT} \
+    VITE_DEFAULT_ID=${VITE_DEFAULT_ID} \
+    VITE_DEFAULT_ICON=${VITE_DEFAULT_ICON} \
+    VITE_DEFAULT_TEXT=${VITE_DEFAULT_TEXT} \
+    VITE_DEFAULT_DESC=${VITE_DEFAULT_DESC} \
+    VITE_DEFAULT_PRINT_EMPTY=${VITE_DEFAULT_PRINT_EMPTY} \
+    VITE_DEFAULT_PROJECT_NAME=${VITE_DEFAULT_PROJECT_NAME} \
+    VITE_DEFAULT_PROJECT_TYPE=${VITE_DEFAULT_PROJECT_TYPE} \
+    VITE_DEFAULT_VREF=${VITE_DEFAULT_VREF} \
+    VITE_ROWS_MIN=${VITE_ROWS_MIN} \
+    VITE_ROWS_MAX=${VITE_ROWS_MAX} \
+    VITE_HEIGHT_MIN=${VITE_HEIGHT_MIN} \
+    VITE_HEIGHT_MAX=${VITE_HEIGHT_MAX} \
+    VITE_ALLOWED_MODULES=${VITE_ALLOWED_MODULES} \
+    VITE_USE_AUTH=${VITE_USE_AUTH} \
+    VITE_AUTOLOGOUT_TIMEOUT=${VITE_AUTOLOGOUT_TIMEOUT} \
+    VITE_PROJECTS_AUTOSAVE_MINUTES=${VITE_PROJECTS_AUTOSAVE_MINUTES}
 
 # Copier package files (package-lock.json requis par npm ci)
 COPY package.json package-lock.json package-base.json app-config.json ./
@@ -60,9 +111,12 @@ RUN apk add --no-cache \
 # Use the official installer image to get the script (faster than downloading)
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
-# Install PHP extensions (gd, exif, fileinfo, zip, opcache)
+# Install PHP extensions required by runtime:
+# - pdo_sqlite/sqlite3 for API stats storage
+# - mbstring for PDF text formatting
+# - gd/exif/fileinfo/zip/opcache for existing app features
 # This is much faster and cleaner than manual compilation
-RUN install-php-extensions gd exif fileinfo zip opcache
+RUN install-php-extensions gd exif fileinfo zip opcache mbstring pdo_sqlite sqlite3
 
 # PHP Configuration for production
 RUN cat > /usr/local/etc/php/conf.d/app.ini << 'PHP_INI'
@@ -83,7 +137,10 @@ PHP_INI
 ENV PHP_FPM_PM_MAX_CHILDREN=10 \
     PHP_FPM_PM_START_SERVERS=2 \
     PHP_FPM_PM_MIN_SPARE_SERVERS=1 \
-    PHP_FPM_PM_MAX_SPARE_SERVERS=5
+    PHP_FPM_PM_MAX_SPARE_SERVERS=5 \
+    PHP_APP_MODE=production \
+    APP_HOSTNAME=localhost \
+    SQLITE_DB_PATH=/app/public/data/vpanel.sqlite
 
 # PHP-FPM Pool Configuration
 RUN cat > /usr/local/etc/php-fpm.d/www.conf << 'PHPFPM_CONF'
@@ -101,6 +158,7 @@ pm.max_requests = 500
 
 listen = 127.0.0.1:9000
 listen.allowed_clients = 127.0.0.1
+chdir = /app/public/api
 
 access.log = /proc/self/fd/2
 access.format = "%R - %u %t \"%m %r\" %s"
@@ -125,7 +183,8 @@ RUN if [ ! -f ./public/infos.json ]; then \
 # (No-op: JSON files are already in ./public via COPY --from=builder)
 
 # Set proper permissions
-RUN chown -R www-data:www-data /app && \
+RUN mkdir -p /app/public/data && \
+    chown -R www-data:www-data /app && \
     find /app/public -type f -exec chmod 644 {} \; && \
     find /app/public -type d -exec chmod 755 {} \;
 
@@ -256,8 +315,9 @@ if ! curl -sf http://localhost:8080/ >/dev/null 2>&1; then
 fi
 
 # Check PHP-FPM responsiveness
-if ! curl -sf http://localhost:8080/api/choices.php >/dev/null 2>&1; then
-    echo "WARN: API endpoint slow, but responding"
+if ! curl -fsS http://localhost:8080/api/health.php | grep -q '"status":"ok"'; then
+    echo "FAIL: API health endpoint failed"
+    exit 1
 fi
 
 echo "PASS: Health check successful"

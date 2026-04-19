@@ -97,7 +97,7 @@ main() {
             log_header "PHASE 3: Functional Tests"
             test_endpoint "GET" "/" "200" "Frontend"
             test_endpoint "GET" "/infos.json" "200" "App info"
-            test_endpoint "GET" "/api/choices.php" "200" "Schema API"
+            test_endpoint "GET" "/api/health.php" "200" "API health"
             test_endpoint "GET" "/api/resume.php" "200" "Resume API"
             test_endpoint "GET" "/nonexistent" "200" "SPA routing"
             ;;

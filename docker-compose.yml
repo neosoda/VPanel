@@ -1,11 +1,15 @@
-version: '3.8'
-
 services:
   vpanel:
     build:
       context: .
       dockerfile: Dockerfile
-      # No build args - uses .env.coolify defaults or Dockerfile defaults
+      args:
+        VITE_APP_MODE: ${VITE_APP_MODE:-development}
+        VITE_APP_BASE: ${VITE_APP_BASE:-/}
+        VITE_APP_HOSTNAME: ${VITE_APP_HOSTNAME:-http://localhost:${VPANEL_PORT:-8080}}
+        VITE_APP_URL: ${VITE_APP_URL:-http://localhost:${VPANEL_PORT:-8080}/}
+        VITE_APP_API_URL: ${VITE_APP_API_URL:-/api/}
+        VITE_USE_AUTH: ${VITE_USE_AUTH:-false}
     
     container_name: vpanel-app
     restart: unless-stopped
@@ -21,18 +25,18 @@ services:
       PHP_FPM_PM_START_SERVERS: ${PHP_FPM_PM_START_SERVERS:-2}
       PHP_FPM_PM_MIN_SPARE_SERVERS: ${PHP_FPM_PM_MIN_SPARE_SERVERS:-1}
       PHP_FPM_PM_MAX_SPARE_SERVERS: ${PHP_FPM_PM_MAX_SPARE_SERVERS:-5}
-      
-      # App Settings
-      APP_ENV: development
+      PHP_APP_MODE: ${PHP_APP_MODE:-development}
+      APP_HOSTNAME: ${APP_HOSTNAME:-localhost}
+      SQLITE_DB_PATH: ${SQLITE_DB_PATH:-/app/public/data/vpanel.sqlite}
     
     # Volumes - only persistent storage
     volumes:
-      # Projects storage (optional, can be commented out)
-      - vpanel_projects:/app/projects:rw
+      # Persistent SQLite data
+      - vpanel_data:/app/public/data:rw
     
     # Health check
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/infos.json"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/health.php | grep -q '\"status\":\"ok\"'"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -47,5 +51,5 @@ services:
         labels: "vpanel-dev"
 
 volumes:
-  vpanel_projects:
+  vpanel_data:
     driver: local

@@ -9,35 +9,38 @@ PRAGMA foreign_keys = ON;
 -- ─── Structures de statistiques autorisées ───────────────────
 CREATE TABLE IF NOT EXISTS `stats_allowed_structs` (
     `id`  INTEGER PRIMARY KEY AUTOINCREMENT,
-    `key` VARCHAR(50)  NOT NULL UNIQUE
+    `key` VARCHAR(50)  NOT NULL UNIQUE,
+    `description` VARCHAR(255) NOT NULL DEFAULT ''
 );
 
-INSERT OR IGNORE INTO `stats_allowed_structs` (`key`) VALUES
-    ('web'),
-    ('app');
+INSERT OR IGNORE INTO `stats_allowed_structs` (`key`, `description`) VALUES
+    ('web', 'Web'),
+    ('app', 'Application');
 
 -- ─── Actions de statistiques autorisées ──────────────────────
 CREATE TABLE IF NOT EXISTS `stats_allowed_actions` (
     `id`  INTEGER PRIMARY KEY AUTOINCREMENT,
-    `key` VARCHAR(50)  NOT NULL UNIQUE
+    `key` VARCHAR(50)  NOT NULL UNIQUE,
+    `description` VARCHAR(255) NOT NULL DEFAULT ''
 );
 
-INSERT OR IGNORE INTO `stats_allowed_actions` (`key`) VALUES
-    ('create'),
-    ('import'),
-    ('export'),
-    ('print');
+INSERT OR IGNORE INTO `stats_allowed_actions` (`key`, `description`) VALUES
+    ('create', 'Créations de projets'),
+    ('import', 'Imports de projets'),
+    ('export', 'Exports de projets'),
+    ('print', 'Impressions');
 
 -- ─── Choix de statistiques autorisés ─────────────────────────
 CREATE TABLE IF NOT EXISTS `stats_allowed_choices` (
     `id`  INTEGER PRIMARY KEY AUTOINCREMENT,
-    `key` VARCHAR(50)  NOT NULL UNIQUE
+    `key` VARCHAR(50)  NOT NULL UNIQUE,
+    `description` VARCHAR(255) NOT NULL DEFAULT ''
 );
 
-INSERT OR IGNORE INTO `stats_allowed_choices` (`key`) VALUES
-    ('theme'),
-    ('print'),
-    ('print_format');
+INSERT OR IGNORE INTO `stats_allowed_choices` (`key`, `description`) VALUES
+    ('theme', 'Thèmes utilisés'),
+    ('print', 'Types d''impressions'),
+    ('print_format', 'Formats d''impression');
 
 -- ─── Visites ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `stats_visits` (
