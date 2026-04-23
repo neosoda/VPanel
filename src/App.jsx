@@ -32,6 +32,7 @@ import Row from "./Row";
 import ContentEditable from "./ContentEditable";
 
 import newProjectIcon from './assets/new_project.svg';
+import zoomScanIcon from './assets/zoom-scan.svg';
 import clearProjectIcon from './assets/x.svg';
 import exportProjectIcon from './assets/download.svg';
 import printProjectIcon from './assets/printer.svg';
@@ -64,6 +65,7 @@ import SummaryTab from "./SummaryTab.jsx";
 import SchemaTab from "./SchemaTab.jsx";
 import WelcomePopup from "./WelcomePopup.jsx";
 import ThemeEditorPopup from "./ThemeEditorPopup.jsx";
+import ScannerWorkflow from "./scanner/ScannerWorkflow.jsx";
 
 import { action, choices } from "../public/api/stats.js";
 
@@ -82,6 +84,7 @@ function App() {
 
     const space = useContext(SpaceContext);
 
+    const [scannerOpen, setScannerOpen] = useState(false);
     const [tab, setTab] = useState(1);
     const [editor, setEditor] = useState(null);
     const [newProjectProperties, setNewProjectProperties] = useState(null);
@@ -1802,6 +1805,18 @@ function App() {
 
             <nav className={`button_group ${UIFrozen ? 'disabled' : ''}`.trim()}>
 
+                <button
+                    className="button_group-scanner"
+                    onClick={() => setScannerOpen(true)}
+                    title="Scanner un tableau électrique"
+                    style={{ color: 'var(--primary-color)' }}
+                >
+                    <img src={zoomScanIcon} width={16} height={16} alt="Scanner" />
+                    <span>Scanner</span>
+                </button>
+
+                <div className="button_group-separator"></div>
+
                 {!space.project && <>
                     <button className={`button_group-new_project active`.trim()}
                         onClick={() => {
@@ -2450,7 +2465,7 @@ function App() {
             {space && space.loadState === 'loading' && !space.error && <LoadingPopup />}
             {space && space.error && <LoadingErrorPopup error={space.error} onCancel={() => { if (window) window.close(); }} />}
 
-
+            {scannerOpen && <ScannerWorkflow onClose={() => setScannerOpen(false)} />}
 
         </div>
     )
