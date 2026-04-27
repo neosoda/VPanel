@@ -28,6 +28,7 @@ import './main.css';
 import * as pkg from '../package.json';
 import NewVersionPopup from './NewVersionPopup.jsx';
 import SpaceProvider from './SpaceProvider.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
 
 
 function Footer() {
@@ -45,7 +46,7 @@ function Footer() {
 }
 
 export default function Main() {
-    const [newVersionAvaillable, setNewVersionAvaillable] = useState(null);
+    const [newVersionAvailable, setNewVersionAvailable] = useState(null);
 
     useEffect(() => {
         console.log("Mode:", import.meta.env.VITE_APP_MODE);
@@ -99,10 +100,10 @@ export default function Main() {
                 const localVersion = pkg.version;
 
                 if (semver.gt(currentVersion, localVersion)) {
-                    console.log(`New version ${currentVersion} availlable ! Please force your browser to reload before using it.`);
-                    setNewVersionAvaillable(currentVersion);
+                    console.log(`New version ${currentVersion} available. Please force-reload your browser.`);
+                    setNewVersionAvailable(currentVersion);
                 } else {
-                    console.log(`You are up to date. Current version: ${currentVersion}`);
+                    console.log(`Up to date. Current version: ${currentVersion}`);
                 }
             })
             .catch(error => console.error("Unable to verify app version : ", error));
@@ -110,17 +111,19 @@ export default function Main() {
     }, []);
 
     return (
-        <SpaceProvider>
-            <App />
-            <Footer />
+        <ErrorBoundary>
+            <SpaceProvider>
+                <App />
+                <Footer />
 
-            {newVersionAvaillable && <NewVersionPopup
-                newVersion={newVersionAvaillable}
-                onOk={() => {
-                    window.location.reload(true);
-                }}
-            />}
-        </SpaceProvider>
+                {newVersionAvailable && <NewVersionPopup
+                    newVersion={newVersionAvailable}
+                    onOk={() => {
+                        window.location.reload(true);
+                    }}
+                />}
+            </SpaceProvider>
+        </ErrorBoundary>
     );
 }
 

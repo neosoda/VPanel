@@ -470,13 +470,18 @@ function filter_string_polyfill(string $string): string
 
 
 // mode
-// PHP_APP_MODE env var allows Docker/Coolify to override the default (avoids
-// endpoints that do not pass ?m= from falling back to 'development' in prod).
+// PHP_APP_MODE env var allows Docker/Coolify to set the runtime mode.
+// The GET param ?m= is honoured only in development to allow local tooling;
+// in any other server-set mode it is ignored to prevent privilege escalation.
 $_defaultMode = getenv('PHP_APP_MODE');
-$_defaultMode = ($_defaultMode !== false && $_defaultMode !== '') ? $_defaultMode : 'development';
-$_mode = isset($_GET['m']) ? trim(rawurldecode($_GET['m'])) : $_defaultMode;
-$_mode = strtolower($_mode);
-if (!preg_match('/^[a-z0-9_-]+$/', $_mode)) {
+$_defaultMode = ($_defaultMode !== false && $_defaultMode !== '') ? strtolower(trim($_defaultMode)) : 'development';
+if ($_defaultMode === 'development' && isset($_GET['m'])) {
+    $_mode = trim(rawurldecode($_GET['m']));
+    $_mode = strtolower($_mode);
+    if (!preg_match('/^[a-z0-9_-]+$/', $_mode)) {
+        $_mode = $_defaultMode;
+    }
+} else {
     $_mode = $_defaultMode;
 }
 define('MODE', $_mode);
@@ -497,22 +502,37 @@ if (!defined('STATS_VISITS_INTERVAL')) {
 
 
 // cors
+// Wildcard origin + credentials is rejected by all browsers (CORS spec §3.2).
+// In development we reflect the exact origin to support credentials.
+// In production/public modes we use wildcard (no credentials needed).
+$_requestOrigin = trim((string) ($_SERVER['HTTP_ORIGIN'] ?? ''));
+$_corsOrigin = '*';
+$_corsCredentials = false;
+if (MODE === 'development' && $_requestOrigin !== '') {
+    $_corsOrigin = $_requestOrigin;
+    $_corsCredentials = true;
+}
 $accessControlHeaders = trim((string) ($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ?? ''));
 if ($accessControlHeaders === '') {
     $accessControlHeaders = 'Content-Type, Authorization, X-Requested-With';
 }
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Origin: {$_corsOrigin}");
     header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
     header("Access-Control-Allow-Headers: {$accessControlHeaders}");
-    header("Access-Control-Max-Age: 1728000");
+    header("Access-Control-Max-Age: 86400");
     header("Content-Length: 0");
     header("Content-Type: text/plain");
+    if ($_corsCredentials) header("Access-Control-Allow-Credentials: true");
     exit(0);
 }
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: {$_corsOrigin}");
+if ($_corsCredentials) header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json; charset=utf-8");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("Referrer-Policy: strict-origin-when-cross-origin");
+unset($_requestOrigin, $_corsOrigin, $_corsCredentials);
 
 
 // datetime
@@ -587,25 +607,24 @@ define('PARENT_REFERER', $prt);
 
 
 // client infos
-$ip = isset($_GET['ip']) ? trim(rawurldecode($_GET['ip'])) : '';
+// IP and User-Agent are always derived from server superglobals only.
+// Accepting these from GET params would allow trivial spoofing of analytics.
+$ip = getRealUserIp();
+if (strpos((string)$ip, ',') !== false) {
+    $ips = explode(',', (string)$ip);
+    $ip = trim($ips[0]);
+}
 if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-    $ip = getRealUserIp();
-    if (strpos((string)$ip, ',') !== false) {
-        $ips = explode(',', (string)$ip);
-        $ip = trim($ips[0]);
-    }
-    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-        $ip = '0.0.0.0';
-    }
+    $ip = '0.0.0.0';
 }
 define('CLIENT_IP', $ip);
 define('CLIENT_TYPE', isBot() ? 'bot' : 'user');
 define('CLIENT_FROM_LOCALHOST', CLIENT_IP === '127.0.0.1' || CLIENT_IP === '::1');
+unset($ip);
 
 
 // user agent
-$ua = trim(isset($_GET['ua']) ? trim(rawurldecode($_GET['ua'])) : (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : ''));
-define('USER_AGENT', $ua);
+define('USER_AGENT', trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')));
 
 
 // database
